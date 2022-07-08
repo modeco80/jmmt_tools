@@ -1,11 +1,11 @@
 // Package file extractor.
-// WIP, and a little crashy.
 // Yes, this code is messy, but I just wanted it to work after days of it not doing so.
 
 #include <jmmt/crc.h>
 #include <jmmt/lzss.h>
 #include <jmmt/package.h>
 
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -125,25 +125,34 @@ struct PackageReader {
 
 		// Setup some variables
 
-		// TODO: Implement CRC-based fallback, if required.
-		// 	It PROBABLY isn't.
-
-		currFileName = crcToFilename[currChunk.filenameCrc];
-		chunksLeft = currChunk.chunkAmount - 1;
-
 		// If we finished a file, the work buffer is empty.
-		if(fileWorkBuffer.empty())
+		if(fileWorkBuffer.empty()) {
+
+			// TODO: Implement CRC-based fallback, if required.
+			// 	It PROBABLY isn't.
+
+			currFileName = crcToFilename[currChunk.filenameCrc];
+
+			std::cout << "Reading \"" << currFileName << "\".\n";
+
+			chunksLeft = currChunk.chunkAmount - 1;
 			fileWorkBuffer.resize(currChunk.fileSize);
+		}
 
 		std::vector<std::uint8_t> compressedBuffer(currChunk.compressedChunkSize);
 
 		auto old = is.tellg();
 
 		is.seekg(currChunk.dataOffset, std::istream::beg);
-
-		// Read and decompress where we need to, taking the block offset into account.
 		is.read(reinterpret_cast<char*>(compressedBuffer.data()), currChunk.compressedChunkSize);
-		jmmt::DecompressLzss(nullptr, compressedBuffer.data(), currChunk.compressedChunkSize, fileWorkBuffer.data() + currChunk.blockOffset);
+
+		// If the chunk isn't actually compressed, just copy it into the work buffer.
+		// If it is, decompress it.
+		if(currChunk.compressedChunkSize == currChunk.chunkSize) {
+			memcpy(fileWorkBuffer.data() + currChunk.blockOffset, compressedBuffer.data(), currChunk.chunkSize);
+		} else {
+			jmmt::DecompressLzss(nullptr, compressedBuffer.data(), currChunk.compressedChunkSize, fileWorkBuffer.data() + currChunk.blockOffset);
+		}
 
 		// Seek back to the old place the stream was before reading and decompress
 		is.seekg(old, std::istream::beg);
@@ -168,7 +177,7 @@ struct PackageReader {
 			ReadFileChunk();
 		}
 
-		//std::cout << "Read file \"" << currFileName << "\"\n";
+		std::cout << "Read file \"" << currFileName << "\"\n";
 
 		cb(DecompressedFile { .filename = currFileName,
 			 .data = fileWorkBuffer });
@@ -227,8 +236,6 @@ struct PackageReader {
 };
 
 int main(int argc, char** argv) {
-	// std::ifstream ifs("config.pak", std::ifstream::binary);
-
 	if(argc != 2) {
 		std::cout << "Usage: " << argv[0] << " [path 2 JMMT PAK file]";
 		return 1;

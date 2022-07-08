@@ -21,9 +21,10 @@ Renames the .dat files in data/ on the disc to filenames which are actually usef
 
 ### `jmmt_pack_extractor`
 
-Extractor for .pak files. Unlike the BMS script, this extractor takes into account several things about the format.
+Extractor for .pak files. 
 
-Currently kind of crashy. Does extract a few archives in full though.
+Unlike the BMS script, this extractor takes into account several things about the format.
+
 
 ### `jmmt_met_extractor`
 
