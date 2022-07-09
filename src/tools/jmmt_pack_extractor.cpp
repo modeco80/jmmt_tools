@@ -25,7 +25,6 @@ T LameRead(std::istream& is) {
 	return t;
 }
 
-
 /**
  * Reads package files.
  */
@@ -44,9 +43,8 @@ struct PackageReader {
 	}
 
 	void Init() {
-		is.seekg(-0xc, std::istream::end);
+		is.seekg(-sizeof(jmmt::PackageEofHeader), std::istream::end);
 
-		// Read the eof header
 		eofHeader = LameRead<jmmt::PackageEofHeader>(is);
 
 		// We ideally should be at the end of file after reading the eof header.
@@ -61,6 +59,8 @@ struct PackageReader {
 			return;
 		}
 
+
+
 		// Read the string table, and hash every string out into a map.
 		// This is used to build our crc->filename mapping for this archive.
 		{
@@ -72,8 +72,6 @@ struct PackageReader {
 
 				while(true) {
 					c = is.get();
-
-					// std::printf("%c\n", c);
 
 					if(c == '\0')
 						return s;
@@ -94,33 +92,37 @@ struct PackageReader {
 				l = is.tellg();
 
 				// print out the creation of the crc/filename map for debugging
-				// std::printf("%s -> 0x%x\n", string.c_str(), jmmt::HashString(string.c_str()));
+#if 0
+				std::printf("%s -> 0x%x\n", string.c_str(), jmmt::HashString(string.c_str()));
+#endif
 			}
 		}
 
-		// Go to the start of the first pfil (skipping the pgrp we just read)
-		// after we setup our map.
+		//std::cout << "Group name: \"" << crcToFilename[group.groupNameCrc] << "\"\n";
 
+		// Go to the start of the first file chunk, skipping the group that we just read,
+		// after we have finished creating our CRC->filename map.
 		is.seekg(static_cast<std::streamsize>(eofHeader.headerStartOffset) + sizeof(jmmt::PackageGroup), std::istream::beg);
 	}
 
 	/**
+	 * Get if the package file is invalid.
 	 *
-	 * \return false if file isn't invalid, true otherwise.
+	 * \return True if file is invalid; false otherwise
 	 */
 	[[nodiscard]] bool Invalid() const {
 		return fileInvalid;
 	}
 
-	// Read a file chunk.
+	/**
+	 * Read a single file chunk.
+	 */
 	void ReadFileChunk() {
-		if(fileInvalid)
-			return;
-
 		currChunk = LameRead<jmmt::PackageFile>(is);
+
 		if(currChunk.magic != jmmt::PackageFile::TypeMagic) {
-			fileInvalid = true;
-			return;
+			std::cout << "Invalid file chunk\n";
+			std::exit(1);
 		}
 
 		// Setup some variables
@@ -133,7 +135,7 @@ struct PackageReader {
 
 			currFileName = crcToFilename[currChunk.filenameCrc];
 
-			std::cout << "Reading \"" << currFileName << "\".\n";
+			//std::cout << "Reading \"" << currFileName << "\".\n";
 
 			chunksLeft = currChunk.chunkAmount - 1;
 			fileWorkBuffer.resize(currChunk.fileSize);
@@ -160,43 +162,35 @@ struct PackageReader {
 
 	/**
 	 * Read a file from this package.
-	 * \param[in] cb Called when file is read
+	 * \param[in] cb Called when file is finished being read.
 	 */
 	template <class DoneCallback>
 	void ReadFile(DoneCallback&& cb) {
-		if(fileInvalid)
-			return;
-
-		// Read first file chunk.
-		// It's perfectly legal for this to be all we need to do.
 		ReadFileChunk();
 
-		// Read additional chunks, if required.
+		// Read additional chunks required to complete the file,
+		// if we (, well) have to.
 		for(auto i = 0; i < chunksLeft; ++i) {
-			// std::printf("reading additional chunk %d/%d\n", i, chunksLeft);
+			//std::cout << "Reading additional chunk " << i + 1 << '/' << chunksLeft << ".\n";
 			ReadFileChunk();
 		}
 
-		std::cout << "Read file \"" << currFileName << "\"\n";
+		std::cout << "Read file \"" << currFileName << "\" from archive.\n";
 
+		// Call user-provided callback
 		cb(DecompressedFile { .filename = currFileName,
 			 .data = fileWorkBuffer });
 
-		// write file data to stdout (debugging!)
-		// std::cout.write(reinterpret_cast<const char*>(fileWorkBuffer.data()), fileWorkBuffer.size());
 
 		fileWorkBuffer.clear();
 	}
 
 	/**
 	 * Read all possible files from this package.
-	 * \param[in] cb Called when file is read
+	 * \param[in] cb Called when file is finished being read.
 	 */
 	template <class DoneCallback>
 	void ReadFiles(DoneCallback&& cb) {
-		if(fileInvalid)
-			return;
-
 		for(auto i = 0; i < group.fileCount; ++i)
 			ReadFile(cb);
 	}
@@ -220,7 +214,9 @@ struct PackageReader {
 	 */
 	std::map<jmmt::crc32_t, std::string> crcToFilename;
 
-	// file stuff
+	/**
+	 * The amount of chunks left that we need to read to complete a file.
+	 */
 	uint32_t chunksLeft {};
 
 	// The name of the file we are processing.
@@ -230,14 +226,15 @@ struct PackageReader {
 	jmmt::PackageFile currChunk {};
 
 	// File-sized work buffer used to store the file
-	// we're currently working on. Freed when a file is
-	// finished being extracted.
+	// we're currently working on.
+	//
+	// Freed when a file is extracted completely (after being copied).
 	std::vector<std::uint8_t> fileWorkBuffer;
 };
 
 int main(int argc, char** argv) {
 	if(argc != 2) {
-		std::cout << "Usage: " << argv[0] << " [path 2 JMMT PAK file]";
+		std::cout << "Usage: " << argv[0] << " [path to JMMT PAK file]";
 		return 1;
 	}
 
@@ -265,15 +262,17 @@ int main(int argc, char** argv) {
 
 		std::ofstream ofs(outpath.string(), std::ofstream::binary);
 		if(!ofs) {
-			std::cout << "Could not open \"" << outpath.string() << "\".\n";
-			std::exit(1);
+			std::cerr << "Could not open \"" << outpath.string() << "\" for writing.\n";
+			return;
 		}
 
 		ofs.write(reinterpret_cast<const char*>(file.data.data()), static_cast<std::streampos>(file.data.size()));
 		ofs.close();
 
-		std::cout << "Wrote \"" << outpath.string() << "\".\n";
+		std::cout << "Wrote \"" << outpath.string() << "\" to disk.\n";
 	});
+
+	std::cout << "Finished extracting successfully.\n";
 
 	return 0;
 }
