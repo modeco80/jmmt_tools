@@ -25,8 +25,25 @@ T LameRead(std::istream& is) {
 	return t;
 }
 
+std::string ReadString(std::istream& is) {
+	std::string s;
+	char c {};
+
+	if(!is)
+		return "";
+
+	while(true) {
+		c = is.get();
+
+		if(c == '\0')
+			return s;
+
+		s.push_back(c);
+	}
+}
+
 /**
- * Reads package files.
+ * Reader for a package file.
  */
 struct PackageReader {
 
@@ -44,57 +61,33 @@ struct PackageReader {
 
 	void Init() {
 		is.seekg(-sizeof(jmmt::PackageEofHeader), std::istream::end);
-
 		eofHeader = LameRead<jmmt::PackageEofHeader>(is);
 
 		// We ideally should be at the end of file after reading the eof header.
 		auto fileSize = is.tellg();
 
-		// Seek to the header start and read the pgrp.
 		is.seekg(static_cast<std::streamsize>(eofHeader.headerStartOffset), std::istream::beg);
-		group = LameRead<jmmt::PackageGroup>(is);
 
+		group = LameRead<jmmt::PackageGroup>(is);
 		if(group.magic != jmmt::PackageGroup::TypeMagic) {
 			fileInvalid = true;
 			return;
 		}
 
-
-
-		// Read the string table, and hash every string out into a map.
-		// This is used to build our crc->filename mapping for this archive.
+		// Read the string table, and hash every string in it into a map of CRC to string.
 		{
 			is.seekg(static_cast<std::streamsize>(eofHeader.headerStartOffset) + static_cast<std::streamsize>(eofHeader.headerSize), std::istream::beg);
-
-			auto ReadString = [&]() {
-				std::string s;
-				char c {};
-
-				while(true) {
-					c = is.get();
-
-					if(c == '\0')
-						return s;
-
-					s.push_back(c);
-				}
-			};
-
 			auto l = is.tellg();
+
 			// seek ahead of the "header" of the debug info/string table,
 			// since we don't care about it (we read strings until we "stop". though
 			// it might be smart to trust it? idk.)
 			is.seekg(sizeof(uint32_t), std::istream::cur);
 
 			while(l != fileSize - static_cast<std::streamsize>(sizeof(eofHeader))) {
-				auto string = ReadString();
+				auto string = ReadString(is);
 				crcToFilename[jmmt::HashString(string.c_str())] = string;
 				l = is.tellg();
-
-				// print out the creation of the crc/filename map for debugging
-#if 0
-				std::printf("%s -> 0x%x\n", string.c_str(), jmmt::HashString(string.c_str()));
-#endif
 			}
 		}
 
@@ -125,14 +118,8 @@ struct PackageReader {
 			std::exit(1);
 		}
 
-		// Setup some variables
-
 		// If we finished a file, the work buffer is empty.
 		if(fileWorkBuffer.empty()) {
-
-			// TODO: Implement CRC-based fallback, if required.
-			// 	It PROBABLY isn't.
-
 			currFileName = crcToFilename[currChunk.filenameCrc];
 
 			//std::cout << "Reading \"" << currFileName << "\".\n";
@@ -143,21 +130,19 @@ struct PackageReader {
 
 		std::vector<std::uint8_t> compressedBuffer(currChunk.compressedChunkSize);
 
+		// Read into temporary buffer.
 		auto old = is.tellg();
-
 		is.seekg(currChunk.dataOffset, std::istream::beg);
 		is.read(reinterpret_cast<char*>(compressedBuffer.data()), currChunk.compressedChunkSize);
+		is.seekg(old, std::istream::beg);
 
 		// If the chunk isn't actually compressed, just copy it into the work buffer.
-		// If it is, decompress it.
+		// If it is, decompress it into the work buffer.
 		if(currChunk.compressedChunkSize == currChunk.chunkSize) {
 			memcpy(fileWorkBuffer.data() + currChunk.blockOffset, compressedBuffer.data(), currChunk.chunkSize);
 		} else {
 			jmmt::DecompressLzss(nullptr, compressedBuffer.data(), currChunk.compressedChunkSize, fileWorkBuffer.data() + currChunk.blockOffset);
 		}
-
-		// Seek back to the old place the stream was before reading and decompress
-		is.seekg(old, std::istream::beg);
 	}
 
 	/**
@@ -169,7 +154,7 @@ struct PackageReader {
 		ReadFileChunk();
 
 		// Read additional chunks required to complete the file,
-		// if we (, well) have to.
+		// if we (well) have to.
 		for(auto i = 0; i < chunksLeft; ++i) {
 			//std::cout << "Reading additional chunk " << i + 1 << '/' << chunksLeft << ".\n";
 			ReadFileChunk();
@@ -205,12 +190,19 @@ struct PackageReader {
 	// Set to true on any invalid file data.
 	bool fileInvalid = false;
 
+	/**
+	 * EOF header.
+	 */
 	jmmt::PackageEofHeader eofHeader {};
 
+	/**
+	 * Group header.
+	 */
 	jmmt::PackageGroup group {};
 
 	/**
-	 * CRC->sensible filename map.
+	 * CRC->sensible string map.
+	 * Might be worth renaming.
 	 */
 	std::map<jmmt::crc32_t, std::string> crcToFilename;
 
@@ -219,16 +211,21 @@ struct PackageReader {
 	 */
 	uint32_t chunksLeft {};
 
-	// The name of the file we are processing.
+	/**
+	 * Filename from crcToFilename of the file we're reading.
+	 */
 	std::string currFileName;
 
-	// The current chunk the reader is reading.
+	/**
+	 * The current chunk the reader is reading.
+	 */
 	jmmt::PackageFile currChunk {};
 
-	// File-sized work buffer used to store the file
-	// we're currently working on.
-	//
-	// Freed when a file is extracted completely (after being copied).
+	/**
+	 * Work buffer used to store the file we are currently trying to read.
+	 *
+	 * Freed when a file is extracted.
+	 */
 	std::vector<std::uint8_t> fileWorkBuffer;
 };
 
@@ -258,7 +255,9 @@ int main(int argc, char** argv) {
 
 	reader.ReadFiles([&](const auto& file) {
 		auto outpath = path / file.filename;
-		fs::create_directories(outpath.parent_path());
+
+		if(!fs::exists(outpath.parent_path()))
+			fs::create_directories(outpath.parent_path());
 
 		std::ofstream ofs(outpath.string(), std::ofstream::binary);
 		if(!ofs) {
