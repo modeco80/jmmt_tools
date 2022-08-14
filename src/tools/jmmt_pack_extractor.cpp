@@ -27,13 +27,13 @@ T LameRead(std::istream& is) {
 
 std::string ReadString(std::istream& is) {
 	std::string s;
-	char c {};
+	char c;
 
 	if(!is)
 		return "";
 
 	while(true) {
-		c = is.get();
+		c = static_cast<char>(is.get());
 
 		if(c == '\0')
 			return s;
@@ -60,7 +60,7 @@ struct PackageReader {
 	}
 
 	void Init() {
-		is.seekg(-sizeof(jmmt::PackageEofHeader), std::istream::end);
+		is.seekg(-static_cast<ssize_t>(sizeof(jmmt::PackageEofHeader)), std::istream::end);
 		eofHeader = LameRead<jmmt::PackageEofHeader>(is);
 
 		// We ideally should be at the end of file after reading the eof header.
@@ -79,12 +79,12 @@ struct PackageReader {
 			is.seekg(static_cast<std::streamsize>(eofHeader.headerStartOffset) + static_cast<std::streamsize>(eofHeader.headerSize), std::istream::beg);
 			auto l = is.tellg();
 
-			// seek ahead of the "header" of the debug info/string table,
-			// since we don't care about it (we read strings until we "stop". though
-			// it might be smart to trust it? idk.)
+			// seek ahead of the "header" of the debug string table,
+			// since we don't care about it (we read strings until we hit true EOF.
+			// though it might be smart to trust it? IDK.)
 			is.seekg(sizeof(uint32_t), std::istream::cur);
 
-			while(l != fileSize - static_cast<std::streamsize>(sizeof(eofHeader))) {
+			while(l != fileSize - static_cast<ssize_t>(sizeof(eofHeader))) {
 				auto string = ReadString(is);
 				crcToFilename[jmmt::HashString(string.c_str())] = string;
 				l = is.tellg();
@@ -95,7 +95,7 @@ struct PackageReader {
 
 		// Go to the start of the first file chunk, skipping the group that we just read,
 		// after we have finished creating our CRC->filename map.
-		is.seekg(static_cast<std::streamsize>(eofHeader.headerStartOffset) + sizeof(jmmt::PackageGroup), std::istream::beg);
+		is.seekg(static_cast<ssize_t>(eofHeader.headerStartOffset) + static_cast<ssize_t>(sizeof(jmmt::PackageGroup)), std::istream::beg);
 	}
 
 	/**
@@ -141,7 +141,7 @@ struct PackageReader {
 		if(currChunk.compressedChunkSize == currChunk.chunkSize) {
 			memcpy(fileWorkBuffer.data() + currChunk.blockOffset, compressedBuffer.data(), currChunk.chunkSize);
 		} else {
-			jmmt::DecompressLzss(nullptr, compressedBuffer.data(), currChunk.compressedChunkSize, fileWorkBuffer.data() + currChunk.blockOffset);
+			jmmt::DecompressLzss(nullptr, compressedBuffer.data(), static_cast<std::int32_t>(currChunk.compressedChunkSize), fileWorkBuffer.data() + currChunk.blockOffset);
 		}
 	}
 
@@ -180,7 +180,7 @@ struct PackageReader {
 			ReadFile(cb);
 	}
 
-	jmmt::PackageGroup& GetGroup() {
+	[[maybe_unused]] jmmt::PackageGroup& GetGroup() {
 		return group;
 	}
 

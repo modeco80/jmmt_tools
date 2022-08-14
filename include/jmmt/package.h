@@ -8,15 +8,10 @@
 // for LzssHeader
 #include <jmmt/lzss.h>
 
+#include "FourCCObject.h"
+
 namespace jmmt {
 
-	template <class TMagic, TMagic ValidMagic>
-	struct BasicStructureWithMagic {
-		constexpr static TMagic TypeMagic = ValidMagic;
-	};
-
-	template <uint32_t ValidMagic>
-	using FourCCMagic = BasicStructureWithMagic<uint32_t, ValidMagic>;
 
 	// This is the "file header" of sorts.
 	struct PackageEofHeader {

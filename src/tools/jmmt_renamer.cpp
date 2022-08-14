@@ -18,7 +18,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>
-#include <string>
 #include <string_view>
 namespace fs = std::filesystem;
 
@@ -30,7 +29,7 @@ namespace fs = std::filesystem;
 // We could brute-force these, but since the game has them in executable,
 // it's a whole lot faster to just try every game filename and see
 // what sticks (& rename it if it does).
-constinit static std::array<std::string_view, 20> OriginalFilenames = {
+constexpr static std::array<std::string_view, 20> OriginalFilenames = {
 	// First loaded by the game
 	"package.toc",
 
