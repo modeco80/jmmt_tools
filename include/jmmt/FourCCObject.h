@@ -8,7 +8,8 @@ namespace jmmt {
 
 	template <class TMagic, TMagic ValidMagic>
 	struct BasicStructureWithMagic {
-		constexpr static TMagic TypeMagic = ValidMagic;
+		using MagicType = TMagic;
+		constexpr static MagicType TypeMagic = ValidMagic;
 	};
 
 	template <uint32_t ValidMagic>

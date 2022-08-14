@@ -22,7 +22,7 @@ namespace jmmt {
 	};
 
 	struct PackageGroup : public FourCCMagic<0x50524750 /* 'PGRP' */> {
-		uint32_t magic;
+		MagicType magic;
 		uint32_t groupNameCrc;
 
 		uint32_t fileCount;
@@ -30,7 +30,7 @@ namespace jmmt {
 	};
 
 	struct PackageFile : public FourCCMagic<0x4C494650 /* 'PFIL' */> {
-		uint32_t magic;
+		MagicType magic;
 		uint32_t unk[2]; // Don't know what these are?
 
 		// Sequence number of the chunk.
