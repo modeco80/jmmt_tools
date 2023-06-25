@@ -3,7 +3,7 @@
 //! of an extracted (from image) copy of the game.
 
 use std::{fs, io, path::Path};
-use jmmt::hash::hash_string;
+use jmmt::hash::filename::*;
 
 const FILENAME_TABLE : [&str; 20] = [
 		// First loaded by the game
@@ -38,16 +38,6 @@ const FILENAME_TABLE : [&str; 20] = [
 		"TR_training.pak"
 ];
 
-/// Make a .DAT filename from a cleartext filename.
-/// 
-/// .DAT and .MET filenames are formatted like "[hex char * 8].DAT"
-/// The name component is the CRC32 of the original filename.
-///
-/// The DAT/MET filename can be a max of 13 characters long.
-fn hashed_dat_filename(filename: &str) -> String {
-	format!("{:X}.DAT", hash_string(String::from(filename)))
-}
-
 fn main() -> io::Result<()> {
 	
 	// A relatively simple idiot-check. Later on utilities might have a shared library
@@ -59,7 +49,7 @@ fn main() -> io::Result<()> {
 	
 	// Go through the clearname table and rename files in the DATA directory
 	for clearname in FILENAME_TABLE.iter() {
-		let dat_filename = hashed_dat_filename(clearname);
+		let dat_filename = dat_filename(clearname);
 		let dat_src = format!("DATA/{}", dat_filename);
 		let dat_clearname = format!("DATA/{}", String::from(*clearname));
 
