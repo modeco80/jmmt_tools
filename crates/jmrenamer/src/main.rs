@@ -50,12 +50,14 @@ fn hashed_dat_filename(filename: &str) -> String {
 
 fn main() -> io::Result<()> {
 	
-	// A relatively simple idiot-check.
+	// A relatively simple idiot-check. Later on utilities might have a shared library
+	// of code which validates game root stuff and can open it up/etc.
 	if !Path::new("DATA").is_dir() {
 		println!("This program should be run in the root of an extracted copy.");
 		std::process::exit(1);
 	}
 	
+	// Go through the clearname table and rename files in the DATA directory
 	for clearname in FILENAME_TABLE.iter() {
 		let dat_filename = hashed_dat_filename(clearname);
 		let dat_src = format!("DATA/{}", dat_filename);
