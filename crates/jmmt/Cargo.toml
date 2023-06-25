@@ -1,0 +1,7 @@
+[package]
+name = "jmmt"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+binext = "1.0.0"

@@ -1,10 +1,7 @@
-/.idea
-cmake-build-*
-build/
-
-# swap
+# swap files various editors produce
 *.kate-swp
 *.swp
 
-# TEMPORARY!!!!
-/attic
+# Cargo
+/Cargo.lock
+/target
