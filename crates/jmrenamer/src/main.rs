@@ -59,6 +59,8 @@ fn main() -> io::Result<()> {
 		if src_path.exists() {
 			fs::rename(src_path, dest_path)?;
 			println!("moved {} -> {}", src_path.display(), dest_path.display());
+		} else if dest_path.exists() {
+			println!("{} already exists", dest_path.display());
 		}
 	}
 
