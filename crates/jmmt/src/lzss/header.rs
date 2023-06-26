@@ -2,6 +2,7 @@ use std::mem::size_of;
 use crate::format::Validatable;
 
 #[repr(C)]
+#[derive(Debug, Default)]
 pub struct LzssHeader {
 	pub next: u32, // ps2 ptr. usually 0 cause theres no next header
 	pub byte_id: u8,

@@ -1,5 +1,7 @@
 //! Package.toc structures
 
+use super::make_c_string;
+
 /// An entry inside the `package.toc` file
 #[derive(Debug)]
 #[repr(C)]
@@ -15,7 +17,7 @@ pub struct PackageTocEntry {
 
 impl PackageTocEntry {
 	fn file_name(&self) -> Option<String> {
-		String::from_utf8(self.file_name.to_vec()).ok()
+		make_c_string(&self.file_name)
 	}
 
 	fn file_name_hash(&self) -> u32 {

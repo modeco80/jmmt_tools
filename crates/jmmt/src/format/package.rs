@@ -18,6 +18,7 @@ pub struct PackageEofHeader {
 
 /// A Package Group. I have no idea what this is yet
 #[repr(C)]
+#[derive(Debug, Default)]
 pub struct PackageGroup {
 	pub fourcc: u32,
 
@@ -44,6 +45,7 @@ impl Validatable for PackageGroup {
 
 /// A package file chunk.
 #[repr(C)]
+#[derive(Debug, Default)]
 pub struct PackageFileChunk {
 	pub fourcc: u32,
 

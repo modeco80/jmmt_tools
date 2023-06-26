@@ -1,7 +1,8 @@
 [workspace]
 #resolver = "2"
 members = [
-    "crates/jmmt",
-	"crates/jmrenamer"
-#    "crates/paktool"
+	"crates/jmmt",
+	"crates/jmrenamer",
+	"crates/textool"
+#	"crates/paktool"
 ]
