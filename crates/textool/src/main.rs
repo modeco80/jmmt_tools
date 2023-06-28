@@ -1,15 +1,7 @@
 use clap::{Parser, Subcommand};
 
-use std::default;
 use std::path::Path;
-use std::fs::{
-	File
-};
-
-use jmmt::format::{
-	ps2_palette::*,
-	ps2_texture::*
-};
+use jmmt::read::texture::Ps2TextureReader;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -23,34 +15,7 @@ struct Cli {
 enum Commands {
 	/// Exports the texture to a .png file
 	Export { path: String },
-
 	//Import
-}
-
-struct ImageReader {
-	file: File,
-	header: Ps2TextureHeader,
-	pal_header: Ps2PaletteHeader,
-
-	image_data: Vec<u8>,
-	palette_data: Vec<u8>
-}
-
-impl ImageReader {
-	fn new(file: &mut File) -> Self {
-		ImageReader {
-			file: file.try_clone().unwrap(),
-			header: Ps2TextureHeader::default(),
-			pal_header: Ps2PaletteHeader::default(),
-			image_data: Vec::default(),
-			palette_data: Vec::default()
-		}
-	}
-
-	fn read(&mut self) -> std::io::Result<()> {
-		
-		Ok(())
-	}
 }
 
 fn main() {
@@ -58,8 +23,34 @@ fn main() {
 
 	match &cli.command {
 		Commands::Export { path } => {
-			println!("exporting {}", path);
 			let path = Path::new(path);
+
+			if !path.is_file() {
+				println!("Need to provide a path to a file to export.");
+				return ();
+			}
+
+			let mut reader = Ps2TextureReader::new(path);
+
+			match reader.read_data() {
+				Ok(_) => {
+					let mut path = Path::new(path).to_path_buf();
+					path.set_extension("png");
+
+					match reader.convert_to_image().save(path.clone()) {
+						Ok(_) => {
+							println!("Wrote image {}", path.display())
+						}
+						Err(error) => {
+							println!("Error saving image: {}", error);
+						}
+					};
+				}
+				Err(error) => {
+					println!("Error reading texture data: {}", error);
+					return ();
+				}
+			}
 		}
 	}
 }

@@ -7,8 +7,10 @@ pub mod hash;
 pub mod format;
 pub mod lzss;
 
+pub mod util;
+
 // higher level I/O?
-// pub mod read;
+pub mod read;
 // pub mod write;
 
 // Maybe, using package.toc?

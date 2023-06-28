@@ -5,3 +5,5 @@ edition = "2021"
 
 [dependencies]
 binext = "1.0.0"
+image = "0.24.6"
+thiserror = "1.0.40"
