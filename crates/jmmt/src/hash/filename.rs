@@ -16,3 +16,9 @@ pub fn dat_filename(filename: &str) -> String {
 pub fn met_filename(filename: &str) -> String {
 	format!("{:X}.MET", hash_string(String::from(filename)))
 }
+
+/// Make a .DAT filename from a pre-created hash.
+/// This is notably used to re-use hashes from `package.toc`.
+pub fn dat_filename_from_hash(hash: u32) -> String {
+	format!("{:X}.DAT", hash)
+}

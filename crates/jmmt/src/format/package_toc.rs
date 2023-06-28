@@ -16,23 +16,23 @@ pub struct PackageTocEntry {
 }
 
 impl PackageTocEntry {
-	fn file_name(&self) -> Option<String> {
+	pub fn file_name(&self) -> Option<String> {
 		make_c_string(&self.file_name)
 	}
 
-	fn file_name_hash(&self) -> u32 {
+	pub fn file_name_hash(&self) -> u32 {
 		self.file_name_hash
 	}
 
-	fn toc_start_offset(&self) -> u32 {
+	pub fn toc_start_offset(&self) -> u32 {
 		self.toc_start_offset
 	}
 
-	fn toc_size(&self) -> u32 {
+	pub fn toc_size(&self) -> u32 {
 		self.toc_size
 	}
 
-	fn toc_file_count(&self) -> u32 {
+	pub fn toc_file_count(&self) -> u32 {
 		self.toc_file_count
 	}
 }
