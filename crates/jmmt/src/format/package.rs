@@ -1,7 +1,7 @@
 //! Package file format structures
 
-use crate::lzss::header::LzssHeader;
 use super::Validatable;
+use crate::lzss::header::LzssHeader;
 
 /// "EOF" header. The QuickBMS script uses this to seek to the PGRP entry.
 #[repr(C)]
@@ -13,7 +13,7 @@ pub struct PackageEofHeader {
 	pub stringtable_size: u32,
 
 	/// Start offset of the [PackageGroup] in the package file.
-	pub header_start_offset: u32
+	pub header_start_offset: u32,
 }
 
 /// A Package Group. I have no idea what this is yet
@@ -29,12 +29,12 @@ pub struct PackageGroup {
 	pub group_file_count: u32,
 
 	/// Padding. Set to a fill of 0xCD.
-	pub pad: u32
+	pub pad: u32,
 }
 
 impl PackageGroup {
 	/// 'PGRP'
-	pub const VALID_FOURCC : u32 = 0x50524750;
+	pub const VALID_FOURCC: u32 = 0x50524750;
 }
 
 impl Validatable for PackageGroup {
@@ -87,13 +87,12 @@ pub struct PackageFileChunk {
 	pub file_uncompressed_size: u32,
 
 	/// LZSS header. Only used if the file chunk is compressed.
-	pub lzss_header: LzssHeader
+	pub lzss_header: LzssHeader,
 }
-
 
 impl PackageFileChunk {
 	/// 'PFIL'
-	pub const VALID_FOURCC : u32 = 0x4C494650;
+	pub const VALID_FOURCC: u32 = 0x4C494650;
 
 	pub fn is_compressed(&self) -> bool {
 		// If the compressed size matches the uncompressed size

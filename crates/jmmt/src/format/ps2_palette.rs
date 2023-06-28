@@ -17,12 +17,12 @@ pub struct Ps2PaletteHeader {
 	pub data_start: u32,
 	pub header_size: u32,
 
-	pub pad: [u32; 6] // reserved for game code, like .ps2_texture?
+	pub pad: [u32; 6], // reserved for game code, like .ps2_texture?
 }
 
 impl Ps2PaletteHeader {
 	/// 'PAL1'
-	pub const VALID_FOURCC : u32 = 0x314c4150;
+	pub const VALID_FOURCC: u32 = 0x314c4150;
 }
 
 impl Validatable for Ps2PaletteHeader {

@@ -1,5 +1,5 @@
-use std::mem::size_of;
 use crate::format::Validatable;
+use std::mem::size_of;
 
 #[repr(C)]
 #[derive(Debug, Default)]

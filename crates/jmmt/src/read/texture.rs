@@ -91,7 +91,7 @@ impl Ps2TextureReader {
 									);
 								} else {
 									// this is a bad error to return here, but for now it works I guess
-									return Err(Error::InvalidHeader);	
+									return Err(Error::InvalidHeader);
 								}
 							}
 							None => {

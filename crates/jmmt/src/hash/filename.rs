@@ -1,5 +1,5 @@
 //! Utilities for making .DAT and .MET file names
-//! 
+//!
 //! .DAT and .MET filenames are formatted like "{:X}.DAT" in fmt parlance.
 //! The name component is the CRC32 of the original filename.
 //!

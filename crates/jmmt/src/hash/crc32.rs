@@ -65,9 +65,8 @@ impl Crc32Hash {
 	pub fn update_case_insensitive(&self, data: &[u8]) {
 		for b in data.iter() {
 			let old = self.state.take();
-			self.state.set(
-				CRC32_TABLE[((old ^ (*b & !0x20) as u32) & 0xff) as usize] ^ (old >> 8),
-			);
+			self.state
+				.set(CRC32_TABLE[((old ^ (*b & !0x20) as u32) & 0xff) as usize] ^ (old >> 8));
 		}
 	}
 

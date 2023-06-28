@@ -1,10 +1,8 @@
 use std::fs::File;
 use std::io::{Seek, SeekFrom};
-use std::path::{PathBuf};
+use std::path::PathBuf;
 
-use crate::format::{
-	package_toc::*
-};
+use crate::format::package_toc::*;
 
 use binext::BinaryRead;
 use thiserror::Error;
@@ -30,13 +28,13 @@ pub fn read_package_toc(path: PathBuf) -> Result<Vec<PackageTocEntry>> {
 	let file_size = toc_file.seek(SeekFrom::End(0))?;
 	toc_file.seek(SeekFrom::Start(0))?;
 
-	let vec_size : usize = file_size as usize / std::mem::size_of::<PackageTocEntry>();
+	let vec_size: usize = file_size as usize / std::mem::size_of::<PackageTocEntry>();
 
 	if vec_size == 0 {
 		return Err(Error::FileTooSmall);
 	}
 
-	let mut vec : Vec<PackageTocEntry> = Vec::with_capacity(vec_size);
+	let mut vec: Vec<PackageTocEntry> = Vec::with_capacity(vec_size);
 
 	for _ in 0..vec_size {
 		vec.push(toc_file.read_binary::<PackageTocEntry>()?);

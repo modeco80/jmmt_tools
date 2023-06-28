@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
 
-use std::path::Path;
 use jmmt::read::texture::Ps2TextureReader;
+use std::path::Path;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
