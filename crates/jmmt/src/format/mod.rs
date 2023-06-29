@@ -12,26 +12,3 @@ pub trait Validatable {
 	/// Returns true if the object is valid, false otherwise.
 	fn valid(&self) -> bool;
 }
-
-/// Make a Rust [String] from a byte slice that came from a C string/structure.
-///
-/// # Usage
-///
-/// The byte slice has to be a valid UTF-8 string.
-/// (Note that in most cases, ASCII strings are valid UTF-8, so this isn't something you'll particularly
-/// have to worry about).
-///
-/// # Safety
-///
-/// This function does not directly make use of any unsafe Rust code.
-pub fn make_c_string(bytes: &[u8]) -> Option<String> {
-	let bytes_without_null = match bytes.iter().position(|&b| b == 0) {
-		Some(ix) => &bytes[..ix],
-		None => bytes,
-	};
-
-	match std::str::from_utf8(bytes_without_null).ok() {
-		Some(string) => Some(String::from(string)),
-		None => None,
-	}
-}

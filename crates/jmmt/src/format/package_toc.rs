@@ -1,6 +1,6 @@
 //! Package.toc structures
 
-use super::make_c_string;
+use crate::util::make_c_string;
 
 /// An entry inside the `package.toc` file
 #[derive(Debug)]
