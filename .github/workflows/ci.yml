@@ -1,0 +1,16 @@
+on:
+ push:
+ pull_request:
+
+jobs:
+    build:
+        strategy:
+            matrix:
+                os: [ubuntu-latest, windows-latest]
+        runs-on: ${{matrix.os}}
+        steps:
+            - uses: actions/checkout@v3
+            - name: Build
+              run: cargo build
+            - name: Test
+              run: cargo test --verbose
